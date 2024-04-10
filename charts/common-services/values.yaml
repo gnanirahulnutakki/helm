@@ -1,0 +1,697 @@
+nodeSelector: {}
+
+ingress:
+  enabled: false
+  className: alb
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths:
+        - "/"
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+argo-cd:
+  enabled: true
+  fullnameOverride: argocd
+  configs:
+    params:
+      server.rootpath: "/argocd"
+      server.insecure: true
+  dex:
+    enabled: false
+  applicationSet:
+    enabled: false
+  notifications:
+    enabled: false
+  controller:
+    nodeSelector: {}
+  redis:
+    nodeSelector: {}
+  server:
+    nodeSelector: {}
+    service:
+      type: NodePort
+  repoServer:
+    nodeSelector: {}
+  crds:
+    keep: false
+
+prometheus:
+  enabled: true
+  server:
+    extraFlags:
+      - web.enable-lifecycle
+      - web.route-prefix=/
+      - web.external-url=http://prometheus-server/prometheus/
+      - web.enable-admin-api
+    fullnameOverride: prometheus-server
+    configmapReload:
+      enabled: false
+    nodeSelector: {}
+    # Persistence enabled by default and size to 50Gi
+    persistentVolume:
+      size: 8Gi
+    statefulSet:
+      enabled: true
+  nodeExporter:
+    enabled: false
+  kubeStateMetrics:
+    enabled: false
+  alertmanager:
+    enabled: false
+
+  pushgateway:
+    fullnameOverride: prometheus-pushgateway
+    nodeSelector: {}
+    extraArgs:
+      web.enable-admin-api: true
+
+grafana:
+  fullnameOverride: grafana
+  enabled: true
+  nodeSelector: {}
+  # Persistence enabled by default
+  persistence:
+    enabled: true
+    size: 8Gi
+  grafana.ini:
+    server:
+      root_url: "%(protocol)s://%(domain)s/grafana"
+      serve_from_sub_path: true
+    auth.anonymous:
+      enabled: true
+      org_role: Viewer
+    analytics:
+      check_for_updates: false
+    panels:
+      disable_sanitize_html: true
+    log:
+      mode: console
+    log.console:
+      format: text
+      level: info
+    security:
+      allow_embedding: true
+    smtp:
+      enabled: true
+      host: smtp-server:25
+      from_address: saas@radiantlogic.com
+
+  # Setup Data Source (prometheus and elastic)
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          url: http://prometheus-server
+          access: proxy
+          isDefault: true
+        - name: Elasticsearch
+          type: elasticsearch
+          database: vds_server_access.log*
+          url: http://elasticsearch-master:9200
+          password: ""
+          user: ""
+          access: proxy
+          isDefault: false
+          jsonData:
+            esVersion: '7.17.3'
+            logLevelField: fields.level
+            logMessageField: message
+            maxConcurrentShardRequests: 5
+            timeField: '@timestamp'
+          readonly: true
+        - name: Alertmanager
+          type: alertmanager
+          url: http://prometheus-alertmanager
+          access: proxy
+        - name: OpenSearch
+          type: opensearch
+          access: proxy
+          url: http://opensearch-cluster-master:9200
+          jsonData:
+            esVersion: 70
+            timeField: "@timestamp"
+            interval: Daily
+
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+      - name: 'fid'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 10
+        allowUiUpdates: true
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/fid
+      - name: 'zookeeper'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 10
+        allowUiUpdates: true
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/zookeeper
+      - name: 'elasticsearch'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 10
+        allowUiUpdates: true
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/elasticsearch
+      - name: 'service-status'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 10
+        allowUiUpdates: true
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/service-status
+      - name: 'ia-service-status'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 10
+        allowUiUpdates: true
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/ia-service-status
+  dashboardsConfigMaps:
+    fid: "fid-dashboard"
+    zookeeper: "zookeeper-dashboard"
+    elasticsearch: "audit-logs-elastic-dashboard"
+    service-status: "service-status-dashboard"
+    ia-service-status: "ia-service-status-dashboard"
+
+elasticsearch:
+  enabled: true
+  replicas: 1
+  nodeSelector: {}
+  # Persistence enabled by default and size to 100Gi
+  volumeClaimTemplate:
+    resources:
+      requests:
+        storage: 30Gi
+  clusterHealthCheckParams: "wait_for_status=yellow&timeout=60s"
+
+kibana:
+  enabled: true
+  fullnameOverride: kibana
+  nodeSelector: {}
+  kibanaConfig:
+    kibana.yml: |
+      server.basePath: "/kibana"
+      server.publicBaseUrl: http://kibana.{{ .Release.Namespace }}.svc.cluster.local:5601/kibana
+      telemetry.optIn: false
+      security.showInsecureClusterWarning: false
+
+
+haproxy:
+  enabled: true
+  route:
+    argocd: true
+    grafana: true
+    prometheus: false
+    pushgateway: false
+    elasticsearch: false
+    kibana: true
+    pgadmin4: false
+    slamd: false
+    shellinabox: false
+    eocui: false
+    eocapi: false
+    sdcapi: false
+    opensearch: false
+    opensearchdashboards: false
+
+  fullnameOverride: haproxy
+  nodeSelector: {}
+  service:
+    type: NodePort
+  config: |
+    defaults
+      timeout connect 10s
+      timeout client 30s
+      timeout server 30s
+      log global
+      mode http
+      option httplog
+      maxconn 3000
+    frontend http-in
+      bind *:80
+
+      stats enable
+      stats refresh 30s
+      stats show-node
+      stats uri /stats
+      monitor-uri /healthz
+
+      # routing
+      {{- if ((.Values.route).argocd | default false) }}
+      use_backend argocd_backend if { path /argocd } or { path_beg /argocd/ }
+      {{- end }}
+      {{- if ((.Values.route).grafana | default false) }}
+      use_backend grafana_backend if { path /grafana } or { path_beg /grafana/ }
+      {{- end }}
+      {{- if ((.Values.route).prometheus | default false) }}
+      use_backend prometheus_backend if { path /prometheus } or { path_beg /prometheus/ }
+      {{- end }}
+      {{- if ((.Values.route).pushgateway | default false) }}
+      use_backend pushgateway_backend if { path /pushgateway } or { path_beg /pushgateway/ }
+      {{- end }}
+      {{- if ((.Values.route).kibana | default false) }}
+      use_backend kibana_backend if { path /kibana } or { path_beg /kibana/ }
+      {{- end }}
+      {{- if ((.Values.route).elasticsearch | default false) }}
+      use_backend elasticsearch_backend if { path /elasticsearch } or { path_beg /elasticsearch/ }
+      {{- end }}
+      {{- if ((.Values.route).pgadmin4 | default false) }}
+      use_backend pgadmin4_backend if { path /pgadmin4 } or { path_beg /pgadmin4/ }
+      {{- end }}
+      {{- if ((.Values.route).slamd | default false) }}
+      use_backend slamd_backend if { path /slamd } or { path_beg /slamd/ }
+      {{- end }}
+      {{- if ((.Values.route).shellinabox | default false) }}
+      use_backend shellinabox_backend if { path /shellinabox } or { path_beg /shellinabox/ }
+      {{- end }}
+      {{- if ((.Values.route).eocui | default false) }}
+      use_backend eocui_backend if { path /eoc } or { path_beg /eoc/ }
+      {{- end }}
+      {{- if ((.Values.route).eocapi | default false) }}
+      use_backend eocapi_backend if { path /eoc-backend } or { path_beg /eoc-backend/ }
+      {{- end }}
+      {{- if ((.Values.route).sdccui | default false) }}
+      use_backend sdcapi_backend if { path /sdc } or { path_beg /sdc/ }
+      {{- end }}
+      {{- if ((.Values.route).opensearchdashboards | default false) }}
+      use_backend opensearchdashboards_backend if { path /opensearch-dashboards } or { path_beg /opensearch-dashboards/ }
+      {{- end }}
+      {{- if ((.Values.route).opensearch | default false) }}
+      use_backend opensearch_backend if { path /opensearch } or { path_beg /opensearch/ }
+      {{- end }}
+
+    # backends
+    {{- if ((.Values.route).argocd | default false) }}
+    backend argocd_backend
+      server argocd argocd-server:80
+    {{- end }}
+    {{- if ((.Values.route).grafana | default false) }}
+    backend grafana_backend
+      http-request set-path %[path,regsub(^/grafana/?,/)]
+      server grafana grafana:80
+    {{- end }}
+    {{- if ((.Values.route).prometheus | default false) }}
+    backend prometheus_backend
+      http-request set-path %[path,regsub(^/prometheus/?,/)]
+      server prometheus prometheus-server:80
+    {{- end }}
+    {{- if ((.Values.route).pushgateway | default false) }}
+    backend pushgateway_backend
+      http-request set-path %[path,regsub(^/pushgateway/?,/)]
+      server pushgateway prometheus-pushgateway:9091
+    {{- end }}
+    {{- if ((.Values.route).kibana | default false) }}
+    backend kibana_backend
+      http-request set-path %[path,regsub(^/kibana/?,/)]
+      server kibana kibana:5601
+    {{- end }}
+    {{- if ((.Values.route).elasticsearch | default false) }}
+    backend elasticsearch_backend
+      http-request set-path %[path,regsub(^/elasticsearch/?,/)]
+      server elasticsearch elasticsearch-master:9200
+    {{- end }}
+    {{- if ((.Values.route).pgadmin4 | default false) }}
+    backend pgadmin4_backend
+      server pgadmin4 pgadmin4:80
+    {{- end }}
+    {{- if ((.Values.route).slamd | default false) }}
+    backend slamd_backend
+      server slamd slamd:80
+    {{- end }}
+    {{- if ((.Values.route).shellinabox | default false) }}
+    backend shellinabox_backend
+      http-request set-path %[path,regsub(^/shellinabox/?,/)]
+      server shellinabox shellinabox:8080
+    {{- end }}
+    {{- if ((.Values.route).eocui | default false) }}
+    backend eocui_backend
+      server eocui eoc-ui-service:80
+    {{- end }}
+    {{- if ((.Values.route).eocapi | default false) }}
+    backend eocapi_backend
+      server eocapi eoc-backend-service:80
+    {{- end }}
+    {{- if ((.Values.route).sdccui | default false) }}
+    backend sdcapi_backend
+      server sdcapi sdc-agent:80
+    {{- end }}
+    {{- if ((.Values.route).opensearchdashboards | default false) }}
+    backend opensearchdashboards_backend
+      #http-request set-path %[path,regsub(^/opensearch-dashboards/?,/)]
+      server opensearchdashboards opensearch-dashboards:5601
+    {{- end }}
+    {{- if ((.Values.route).opensearch | default false) }}
+    backend opensearch_backend
+      http-request set-path %[path,regsub(^/opensearch/?,/)]
+      server opensearch opensearch-cluster-master:9200
+    {{- end }}
+
+
+postgresql:
+  enabled: true
+  fullnameOverride: postgresql
+  primary:
+    nodeSelector: {}
+    # Persistence enabled by default and size to 50Gi
+    persistence:
+      size: 10Gi
+    initdb:
+      scriptsConfigMap: "postgres-init-script"
+  databases:
+    eoc:
+      databaseName: eocdb
+      user: eocadmin
+      password: TSXojYsPF4AeZgTq
+      schema: eoc
+    sdc:
+      databaseName: agentsdb
+      user: agentsadmin
+      password: iJukleKLG9fNihIQ
+      schema: agents
+  # backup:
+    # enabled: false
+    # s3bucketName: ""
+    # folderName: "postgresql"
+    # latestBackupName: "postgresql-latest.sql.gz"
+
+pgadmin4:
+  enabled: true
+  fullnameOverride: pgadmin4
+  nodeSelector: {}
+  persistentVolume:
+    enabled: false
+  env:
+    contextPath: "/pgadmin4"
+
+zookeeper:
+  enabled: false
+  fullnameOverride: zookeeper
+  nodeSelector: {}
+
+slamd:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: pgodey/slamd
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "latest"
+  imagePullSecrets: []
+  podAnnotations: {}
+  podSecurityContext: {}
+    # fsGroup: 2000
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
+  service:
+    type: ClusterIP
+    port: 80
+  resources: {}
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 100
+    targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  client:
+    replicaCount: 0
+    image:
+      repository: pgodey/slamd-client
+      pullPolicy: IfNotPresent
+      # Overrides the image tag whose default is the chart appVersion.
+      tag: "latest"
+    podAnnotations: {}
+    podSecurityContext: {}
+    # fsGroup: 2000
+    securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
+    resources: {}
+    autoscaling:
+      enabled: false
+      minReplicas: 1
+      maxReplicas: 100
+      targetCPUUtilizationPercentage: 80
+    # targetMemoryUtilizationPercentage: 80
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+
+shellinabox:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: sspreitzer/shellinabox
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "ubuntu"
+  imagePullSecrets: []
+  podAnnotations: {}
+  podSecurityContext: {}
+    # fsGroup: 2000
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
+  service:
+    type: ClusterIP
+    port: 8080
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+smtp:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: bytemark/smtp
+    tag: "latest"
+    # Overrides the image tag whose default is the chart appVersion.
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  podAnnotations: {}
+  podSecurityContext: {}
+    # fsGroup: 2000
+  securityContext: {}
+  service:
+    type: ClusterIP
+    port: 8080
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  relay:
+    enabled: true
+    host: "smtp.sendgrid.net"
+    port: "587"
+    username: ""
+    password: ""
+
+opensearch:
+  enabled: false
+  fullnameOverride: "opensearch"
+  singleNode: true
+  replicas: 1
+  clusterName: "opensearch-cluster"
+  nodeGroup: "master"
+  masterService: "opensearch-cluster-master"
+  extraEnvs:
+    - name: "DISABLE_SECURITY_PLUGIN"
+      value: "true"
+    - name: "DISABLE_INSTALL_DEMO_CONFIG"
+      value: "true"
+  rbac:
+    create: false
+    serviceAccountAnnotations: {}
+    serviceAccountName: ""
+  nodeSelector: {}
+  persistence:
+    size: 30Gi
+  podSecurityContext:
+    fsGroup: 1000
+    runAsUser: 1000
+  service:
+    type: ClusterIP
+    nodePort: ""
+    annotations: {}
+    httpPortName: http
+    transportPortName: transport
+
+opensearch-dashboards:
+  enabled: false
+  opensearchHosts: "http://opensearch-cluster-master:9200"
+  replicaCount: 1
+  fullnameOverride: "opensearch-dashboards"
+  extraEnvs:
+    - name: DISABLE_SECURITY_DASHBOARDS_PLUGIN
+      value: "true"
+  service:
+    type: ClusterIP
+    port: 5601
+    loadBalancerIP: ""
+    nodePort: ""
+    labels: {}
+    annotations: {}
+    loadBalancerSourceRanges: []
+    # 0.0.0.0/0
+    httpPortName: http
+  nodeSelector: {}
+    # tenantname: duploservices-nike-svc
+  plugins:
+    enabled: false
+    installList: []
+  config:
+    opensearch_dashboards.yml: |
+      server:
+        basePath: "/opensearch-dashboards"
+        rewriteBasePath: true
+
+fluent-bit:
+  enabled: false
+  nodeSelector: {}
+    # tenantname:
+  logs:
+    - name: eoc-backend
+      enable: true
+      path: /var/log/containers/eoc-backend-*.log
+      refresh_interval: 10
+    - name: eoc-orchestrator
+      enable: true
+      path: /var/log/containers/eoc-orchestrator-*.log
+      refresh_interval: 10
+    - name: sdc
+      enable: true
+      path: /var/log/containers/sdc-*.log
+      refresh_interval: 10
+    - name: client-router
+      enable: true
+      path: /var/log/containers/client-*.log
+      refresh_interval: 10
+    - name: tunnel
+      enable: true
+      path: /var/log/containers/r1tunnel*.log
+      refresh_interval: 10
+  outputSearchHost: "elasticsearch-master"
+  fullnameOverride: "fluent-bit"
+  outputSearchType: "es"  # "opensearch"
+  flush: 1
+  logLevel: info
+  metricsPort: 2020
+  service:
+    type: ClusterIP
+  prometheusRule:
+    enabled: false
+  serviceMonitor:
+    enabled: false
+  existingConfigMap: fluent-bit-config
+
+curator:
+  enabled: false
+  config:
+    client:
+      hosts: ["elasticsearch-master"]
+      port: 9200
+      use_ssl: false
+      ssl_no_validate: true
+      timeout: 300
+      certificate:
+      client_cert:
+      client_key:
+      http_auth:
+      master_only: false
+    logging:
+      loglevel: "INFO"
+      logfile:
+      logformat: default
+      blacklist: ['elasticsearch', 'urllib3']
+  logs:
+    - name: "vds_server"
+      enable: true
+      unit: "days"
+      unit_count: 15
+      direction: "older"
+    - name: "vds_server_access"
+      enable: true
+      unit: "days"
+      unit_count: 7
+      direction: "older"
+    - name: "adap_access"
+      enable: true
+      unit: "days"
+      unit_count: 7
+      direction: "older"
+    - name: "adap"
+      enable: true
+      unit: "days"
+      unit_count: 7
+      direction: "older"
+  cronjob:
+    schedule: "* * * * *"
+    annotations: {}
+    labels: {}
+    concurrencyPolicy: ""
+    failedJobsHistoryLimit: ""
+    successfulJobsHistoryLimit: ""
+    jobRestartPolicy: Never
+    startingDeadlineSeconds: ""
+  pod:
+    annotations: {}
+  rbac:
+    enabled: true
+  serviceAccount:
+    create: true
+    annotations: {}
+  hooks:
+    install: false
+    upgrade: false
+  priorityClassName: ""
+  securityContext:
+    runAsUser: 16
+  psp:
+    create: false
+  dryrun: true
+  resources: {}
+  nodeSelector: {}
+    # tenantname:

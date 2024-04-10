@@ -1,0 +1,39 @@
+{{- if eq (index .Values "opensearch-dashboards" "enabled") true }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: opensearch-import
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      restartPolicy: OnFailure
+      volumes:
+      - name: opensearch-data
+        configMap:
+          name: opensearch-data
+          defaultMode: 0777
+      containers:
+      - name: opensearch-import
+        image: alpine/curl:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: OPENSEARCH_URL
+          value: "opensearch-dashboards:5601/opensearch-dashboards"
+        command: ["/bin/sh", "-c"]
+        args:
+            - |
+              apk add -q --no-cache jq
+              /opensearch/curl-script.sh
+        volumeMounts:
+        - name: opensearch-data
+          mountPath: /opensearch/
+{{- end }}
