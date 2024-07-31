@@ -60,8 +60,8 @@ spec:
           apk add --no-cache curl jq
 
           # Execute scripts
-          /scripts/wait-for-kibana.sh
-          /scripts/import-index.sh
+          /kibana/wait-for-kibana.sh
+          /kibana/import-index.sh
         volumeMounts:
         - name: kibana-data
           mountPath: /kibana/
