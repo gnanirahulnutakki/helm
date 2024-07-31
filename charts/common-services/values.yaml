@@ -410,13 +410,12 @@ kibana:
       value: elastic
     - name: ELASTICSEARCH_PASSWORD
       value: changeme
-  healthCheckPath: "/kibana"
+  healthCheckPath: "/app/kibana"
   kibanaConfig:
     kibana.yml: |
-      server.basePath: "/kibana"
+      server.basePath: "/app/kibana"
       server.publicBaseUrl: http://kibana.{{ .Release.Namespace }}.svc.cluster.local:5601/kibana
       telemetry.optIn: false
-      server.rewriteBasePath:true
       server.compression.enabled: true
       security.showInsecureClusterWarning: false
 
