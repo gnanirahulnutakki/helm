@@ -21,9 +21,9 @@ spec:
       {{- end }}
       restartPolicy: OnFailure
       volumes:
-      - name: kibana-scripts
+      - name: kibana-data
         configMap:
-          name: kibana-scripts
+          name: kibana-data
           defaultMode: 0777
       containers:
       - name: kibana-import
@@ -63,9 +63,7 @@ spec:
           /scripts/wait-for-kibana.sh
           /scripts/import-index.sh
         volumeMounts:
-        - name: kibana-scripts
-          mountPath: /scripts
-        - name: kibana-scripts
-          mountPath: /kibana
-          subPath: index_pattern.ndjson
+        - name: kibana-data
+          mountPath: /kibana/
+
 {{- end }}

@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: kibana-scripts
+  name: kibana-data
 data:
   wait-for-kibana.sh: |
     #!/bin/sh
