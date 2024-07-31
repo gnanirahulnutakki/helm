@@ -416,7 +416,7 @@ kibana:
       server.basePath: "/kibana"
       server.publicBaseUrl: http://kibana.{{ .Release.Namespace }}.svc.cluster.local:5601/kibana
       telemetry.optIn: false
-      server.rewriteBasePath:
+      server.rewriteBasePath:true
       server.compression.enabled: true
       security.showInsecureClusterWarning: false
 
