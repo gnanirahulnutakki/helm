@@ -59,7 +59,7 @@ zookeeper:
 # Note: Review and adjust settings for production environments.
 
 argo-cd:
-  enabled: true
+  enabled: false
   fullnameOverride: argocd
   configs:
     params:
@@ -102,7 +102,7 @@ argo-cd:
 # Note: Ensure correct external URL for Prometheus Server and adjust storage as needed.
 
 prometheus:
-  enabled: true
+  enabled: false
   server:
     extraFlags:
       - web.enable-lifecycle
@@ -149,7 +149,7 @@ prometheus:
 
 grafana:
   fullnameOverride: grafana
-  enabled: true
+  enabled: false
   nodeSelector: {}
   # Persistence enabled by default
   persistence:
@@ -384,6 +384,8 @@ elasticsearch:
   nodeSelector: {}
   # Persistence enabled by default and size to 100Gi
   volumeClaimTemplate:
+    accessModes: ["ReadWriteOnce"]
+    storageClassName: "gp2"  # Set default to gp2
     resources:
       requests:
         storage: 30Gi
@@ -431,11 +433,11 @@ kibana:
 haproxy:
   enabled: true
   route:
-    argocd: true
-    grafana: true
+    argocd: false
+    grafana: false
     prometheus: false
     pushgateway: false
-    elasticsearch: false
+    elasticsearch: true
     kibana: true
     pgadmin4: false
     slamd: false
@@ -616,7 +618,7 @@ haproxy:
 # - If enabling backups, ensure proper S3 configuration and credentials.
 
 postgresql:
-  enabled: true
+  enabled: false
   fullnameOverride: postgresql
   primary:
     nodeSelector: {}
@@ -656,7 +658,7 @@ postgresql:
 # Note: Persistent storage is disabled by default. Enable it if you need to preserve pgAdmin4 configuration data across pod restarts.
 
 pgadmin4:
-  enabled: true
+  enabled: false
   fullnameOverride: pgadmin4
   nodeSelector: {}
   persistentVolume:
@@ -680,7 +682,7 @@ pgadmin4:
 # Note: Review and adjust settings according to your testing requirements.
 
 slamd:
-  enabled: true
+  enabled: false
   replicaCount: 1
   image:
     repository: pgodey/slamd
@@ -754,7 +756,7 @@ slamd:
 # Note: Review and adjust security settings based on your environment's requirements.
 
 shellinabox:
-  enabled: true
+  enabled: false
   replicaCount: 1
   image:
     repository: sspreitzer/shellinabox
@@ -796,7 +798,7 @@ shellinabox:
 # Note: Ensure correct SMTP relay credentials and adjust security settings based on your environment's requirements.
 
 smtp:
-  enabled: true
+  enabled: false
   replicaCount: 1
   image:
     repository: bytemark/smtp
@@ -961,7 +963,7 @@ fluent-bit:
 # Curator can perform actions like deleting, closing, or creating indices based on configured filters.
 
 curator:
-  enabled: true
+  enabled: false
   dryrun: false
   # Elasticsearch Client Settings
   # -----------------------------
