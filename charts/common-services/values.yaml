@@ -410,12 +410,12 @@ kibana:
     - name: ELASTICSEARCH_PASSWORD
       value: changeme
   healthCheckPath: "/eoc-backend/kibana"
-  kibanaConfig:
-    kibana.yml: |
-      server.basePath: "/eoc-backend/kibana"
-      server.publicBaseUrl: http://kibana.{{ .Release.Namespace }}.svc.cluster.local:5601/kibana
-      telemetry.optIn: false
-      server.rewriteBasePath:true
+kibanaConfig:
+  kibana.yml: |
+    server.basePath: "/eoc-backend/kibana"
+    server.publicBaseUrl: "http://kibana.{{ .Release.Namespace }}.svc.cluster.local:5601/kibana"
+    telemetry.optIn: false
+    server.rewriteBasePath: true
 
 # HAProxy Configuration
 # ---------------------
