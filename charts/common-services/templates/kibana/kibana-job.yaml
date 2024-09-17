@@ -1,7 +1,4 @@
 {{- if eq .Values.kibana.enabled true }}
-{{- $healthCheckPath := .Values.kibana.healthCheckPath | default "/app/kibana" }}
-{{- $isDefaultHealthCheck := eq $healthCheckPath "/app/kibana" }}
-{{- $kibanaURL := ternary "http://kibana:5601" (printf "http://%s.%s.svc.cluster.local:5601%s" (.Values.kibana.fullnameOverride | default "kibana") .Release.Namespace $healthCheckPath) $isDefaultHealthCheck }}
 
 apiVersion: batch/v1
 kind: Job
@@ -31,7 +28,7 @@ spec:
         imagePullPolicy: IfNotPresent
         env:
         - name: KIBANA_URL
-          value: "{{ $kibanaURL }}"
+          value: "http://kibana:5601{{ .Values.kibana.healthCheckPath | default "/eoc-backend/kibana" }}"
         {{- $username := "" }}
         {{- $password := "" }}
         {{- range .Values.kibana.extraEnvs }}
