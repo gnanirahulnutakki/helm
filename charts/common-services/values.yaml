@@ -390,26 +390,25 @@ elasticsearch:
       requests:
         storage: 30Gi
   clusterHealthCheckParams: "wait_for_status=yellow&timeout=60s"
-  # enable authentication
-  # esMajorVersion: 6
-  # minimumMasterNodes: 1
-  # esConfig:
-  #   elasticsearch.yml: |
-  #     xpack.security.enabled: true
-  #     discovery.type: single-node
-  # extraEnvs:
-  #   - name: ELASTIC_PASSWORD
-  #     value: changeme
+  esMajorVersion: 6
+  minimumMasterNodes: 1
+  esConfig:
+    elasticsearch.yml: |
+      xpack.security.enabled: true
+      discovery.type: single-node
+  extraEnvs:
+    - name: ELASTIC_PASSWORD
+      value: changeme
 
 kibana:
   enabled: true
   fullnameOverride: kibana
   nodeSelector: {}
-  # extraEnvs:
-  #   - name: ELASTICSEARCH_USERNAME
-  #     value: elastic
-  #   - name: ELASTICSEARCH_PASSWORD
-  #     value: changeme
+  extraEnvs:
+    - name: ELASTICSEARCH_USERNAME
+      value: elastic
+    - name: ELASTICSEARCH_PASSWORD
+      value: changeme
   healthCheckPath: "/eoc-backend/kibana"
   kibanaConfig:
     kibana.yml: |
