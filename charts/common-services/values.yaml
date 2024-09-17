@@ -409,10 +409,10 @@ kibana:
       value: elastic
     - name: ELASTICSEARCH_PASSWORD
       value: changeme
-  healthCheckPath: "/eoc-backend/kibana"
+  healthCheckPath: "/app/kibana"
 kibanaConfig:
   kibana.yml: |
-    server.basePath: "/eoc-backend/kibana"
+    server.basePath: "/app/kibana"
     server.publicBaseUrl: "http://kibana.{{ .Release.Namespace }}.svc.cluster.local:5601/kibana"
     telemetry.optIn: false
     server.rewriteBasePath: true
