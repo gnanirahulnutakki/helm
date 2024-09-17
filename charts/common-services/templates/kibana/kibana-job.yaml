@@ -7,9 +7,9 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: kibana-import
-  annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "5"
+  # annotations:
+  #   "helm.sh/hook": post-install,post-upgrade
+  #   "helm.sh/hook-weight": "5"
 spec:
   backoffLimit: 5
   ttlSecondsAfterFinished: 600
