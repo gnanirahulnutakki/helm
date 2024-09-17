@@ -400,6 +400,7 @@ elasticsearch:
     - name: ELASTIC_PASSWORD
       value: changeme
 
+
 kibana:
   enabled: true
   fullnameOverride: kibana
@@ -409,13 +410,13 @@ kibana:
       value: elastic
     - name: ELASTICSEARCH_PASSWORD
       value: changeme
-  healthCheckPath: "/app/kibana"
-kibanaConfig:
-  kibana.yml: |
-    server.basePath: "/app/kibana"
-    server.publicBaseUrl: "http://kibana.{{ .Release.Namespace }}.svc.cluster.local:5601/kibana"
-    telemetry.optIn: false
-    server.rewriteBasePath: true
+  healthCheckPath: "/eoc-backend/kibana"
+  kibanaConfig:
+    kibana.yml: |
+      server.basePath: "/eoc-backend/kibana"
+      server.publicBaseUrl: "http://kibana.{{ .Release.Namespace }}.svc.cluster.local:5601/eoc-backend/kibana"
+      telemetry.optIn: false
+      server.rewriteBasePath: true
 
 # HAProxy Configuration
 # ---------------------
