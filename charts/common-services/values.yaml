@@ -447,7 +447,7 @@ haproxy:
     eocapi: false
     sdcapi: false
     opensearch: false
-    opensearchdashboards: false
+    opensearchdashboards: true
 
   fullnameOverride: haproxy
   nodeSelector: {}
@@ -835,7 +835,7 @@ smtp:
 #   - `persistence.size`: Size of the persistent volume for storing OpenSearch data.
 
 opensearch:
-  enabled: false
+  enabled: true
   fullnameOverride: "opensearch"
   singleNode: true
   replicas: 1
@@ -865,7 +865,7 @@ opensearch:
     transportPortName: transport
 
 opensearch-dashboards:
-  enabled: false
+  enabled: true
   opensearchHosts: "http://opensearch-cluster-master:9200"
   replicaCount: 1
   fullnameOverride: "opensearch-dashboards"
