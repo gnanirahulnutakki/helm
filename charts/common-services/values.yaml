@@ -102,7 +102,7 @@ argo-cd:
 # Note: Ensure correct external URL for Prometheus Server and adjust storage as needed.
 
 prometheus:
-  enabled: false
+  enabled: true
   server:
     extraFlags:
       - web.enable-lifecycle
@@ -149,7 +149,7 @@ prometheus:
 
 grafana:
   fullnameOverride: grafana
-  enabled: false
+  enabled: true
   nodeSelector: {}
   # Persistence enabled by default
   persistence:
