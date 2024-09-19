@@ -435,8 +435,8 @@ haproxy:
   enabled: true
   route:
     argocd: false
-    grafana: false
-    prometheus: false
+    grafana: true
+    prometheus: true
     pushgateway: false
     elasticsearch: true
     kibana: true
